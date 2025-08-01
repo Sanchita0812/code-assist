@@ -3,7 +3,7 @@ import tempfile
 from typing import Generator
 from pydantic import HttpUrl  # only if you're explicitly using HttpUrl elsewhere
 
-def clone_repo_sse(repo_url) -> Generator[str, None, None]:
+def clone_repo_to_temp(repo_url) -> Generator[str, None, None]:
     yield "event: message\ndata: Starting clone...\n\n"
 
     with tempfile.TemporaryDirectory() as tmpdirname:
