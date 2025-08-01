@@ -1,23 +1,26 @@
 import os
 import json
 
-def list_python_files(repo_path):
-    py_files = []
-    for root, _, files in os.walk(repo_path):
-        for file in files:
-            if file.endswith(".py"):
-                full_path = os.path.join(root, file)
-                py_files.append(full_path)
-    return py_files
-
-def read_file(path):
-    with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+def read_file(path: str) -> str:
+    with open(path, 'r', encoding='utf-8') as f:
         return f.read()
 
-def save_json(path, data):
-    with open(path, 'w') as f:
+def write_file(path: str, content: str):
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+def list_python_files(root_dir: str):
+    py_files = []
+    for dirpath, _, filenames in os.walk(root_dir):
+        for f in filenames:
+            if f.endswith(".py"):
+                py_files.append(os.path.join(dirpath, f))
+    return py_files
+
+def save_json(path: str, data: dict):
+    with open(path, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2)
 
-def load_json(path):
-    with open(path, 'r') as f:
+def load_json(path: str) -> dict:
+    with open(path, 'r', encoding='utf-8') as f:
         return json.load(f)
