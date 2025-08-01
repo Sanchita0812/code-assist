@@ -1,5 +1,3 @@
-import os
-import shutil
 import subprocess
 import tempfile
 from typing import Generator
@@ -16,7 +14,9 @@ def clone_repo_sse(repo_url: str) -> Generator[str, None, None]:
                 check=True,
                 text=True,
             )
-            yield f"event: message\ndata: Cloned repo to {tmpdirname}\n\n"
+            yield f"event: message\ndata: Repo cloned to {tmpdirname}\n\n"
         except subprocess.CalledProcessError as e:
-            yield f"event: error\ndata: Failed to clone repo: {e.stderr}\n\n"
+            yield f"event: error\ndata: Git error: {e.stderr}\n\n"
             return
+
+    yield "event: done\ndata: Cloning complete\n\n"
