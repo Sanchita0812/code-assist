@@ -1,10 +1,14 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from app.schemas.request import CodeRequest
-from app.utils.sse import stream_events
+from app.services.git_service import clone_repo_sse
 
 router = APIRouter()
 
 @router.post("/code")
 async def process_code(request_data: CodeRequest):
-    return StreamingResponse(stream_events(), media_type="text/event-stream")
+    repo_url = request_data.repoUrl
+    return StreamingResponse(
+        clone_repo_sse(repo_url),
+        media_type="text/event-stream"
+    )
