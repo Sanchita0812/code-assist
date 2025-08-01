@@ -13,5 +13,6 @@ def read_file(path):
         return f.read()
 
 def write_file(path, content):
+    os.makedirs(os.path.dirname(path), exist_ok=True)  # Ensure parent directories exist
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
