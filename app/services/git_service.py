@@ -3,7 +3,7 @@ import tempfile
 from typing import Generator
 
 def clone_repo_sse(repo_url: str) -> Generator[str, None, None]:
-    yield "event: message\ndata: Cloning repo...\n\n"
+    yield "event: message\ndata: Starting clone...\n\n"
 
     with tempfile.TemporaryDirectory() as tmpdirname:
         try:
@@ -14,9 +14,9 @@ def clone_repo_sse(repo_url: str) -> Generator[str, None, None]:
                 check=True,
                 text=True,
             )
-            yield f"event: message\ndata: Repo cloned to {tmpdirname}\n\n"
+            yield f"event: message\ndata: Cloned to temp dir.\n\n"
         except subprocess.CalledProcessError as e:
             yield f"event: error\ndata: Git error: {e.stderr}\n\n"
-            return
+            return  # Exit early on error
 
     yield "event: done\ndata: Cloning complete\n\n"
