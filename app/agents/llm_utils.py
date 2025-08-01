@@ -61,6 +61,25 @@ def summarize_code(code: str) -> str:
         print(f"[Gemini API Error]: {e}")
         return "Error: The summary could not be generated due to an API issue."
 
+def call_llm(prompt: str) -> str:
+    """
+    Generic LLM wrapper function that uses Gemini to process prompts.
+    
+    Args:
+        prompt: The prompt to send to the LLM
+        
+    Returns:
+        The LLM's response as a string
+    """
+    try:
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        print(f"[Gemini API Error]: {e}")
+        return "Error: Could not generate response due to an API issue."
+
+# Alias for backward compatibility
+gemini_llm = call_llm
 
 # --- Script Execution ---
 # The `if __name__ == "__main__":` block ensures this code only runs

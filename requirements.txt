@@ -5,4 +5,5 @@ google-generativeai
 python-dotenv
 tqdm
 gitpython
-difflib  
+requests
+pydantic

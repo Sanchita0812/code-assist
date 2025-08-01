@@ -1,23 +1,57 @@
 import subprocess
 import tempfile
-from typing import Generator
-from pydantic import HttpUrl  # only if you're explicitly using HttpUrl elsewhere
+import os
+from typing import AsyncGenerator
 
-def clone_repo_to_temp(repo_url) -> Generator[str, None, None]:
-    yield "event: message\ndata: Starting clone...\n\n"
+async def clone_repo_to_temp(repo_url: str) -> str:
+    """
+    Clone a repository to a temporary directory.
+    
+    Args:
+        repo_url: The URL of the repository to clone
+        
+    Returns:
+        Path to the temporary directory containing the cloned repo
+        
+    Raises:
+        Exception: If git clone fails
+    """
+    # Create a temporary directory that won't be automatically cleaned up
+    temp_dir = tempfile.mkdtemp()
+    
+    try:
+        result = subprocess.run(
+            ["git", "clone", str(repo_url), temp_dir],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=True,
+            text=True,
+        )
+        return temp_dir
+    except subprocess.CalledProcessError as e:
+        # Clean up the temp directory if clone fails
+        import shutil
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise Exception(f"Git clone failed: {e.stderr.strip()}")
 
-    with tempfile.TemporaryDirectory() as tmpdirname:
+def stream_clone_progress(repo_url: str) -> AsyncGenerator[str, None]:
+    """
+    Stream the progress of cloning a repository.
+    
+    Args:
+        repo_url: The URL of the repository to clone
+        
+    Yields:
+        Server-sent event formatted strings
+    """
+    async def _stream():
+        yield "event: message\ndata: Starting clone...\n\n"
+        
         try:
-            result = subprocess.run(
-                ["git", "clone", str(repo_url), tmpdirname],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=True,
-                text=True,
-            )
-            yield "event: message\ndata: Cloned to temp dir.\n\n"
-        except subprocess.CalledProcessError as e:
-            yield f"event: error\ndata: Git error: {e.stderr.strip()}\n\n"
-            return
-
-    yield "event: done\ndata: Cloning complete\n\n"
+            temp_dir = await clone_repo_to_temp(repo_url)
+            yield f"event: message\ndata: Cloned to {temp_dir}\n\n"
+            yield f"event: done\ndata: {temp_dir}\n\n"
+        except Exception as e:
+            yield f"event: error\ndata: {str(e)}\n\n"
+    
+    return _stream()
