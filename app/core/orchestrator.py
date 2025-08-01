@@ -3,36 +3,51 @@ import time
 import tempfile
 from urllib.parse import urlparse
 
+from e2b_code_interpreter import Sandbox
+
 from app.agents.git_ops import clone_repo, create_timestamped_branch, commit_changes, push_branch
 from app.agents.pr_ops import create_pull_request
-from app.agents.code_agent import run_prompt_on_repo  # You’ll need to implement this
+from app.agents.code_agent import run_prompt_on_repo  # your existing logic, updated for sandbox use
 
 def run_code_edit_flow(repo_url: str, prompt: str) -> str:
-    # Parse repo info
+    # Parse GitHub info
     parsed = urlparse(repo_url)
     path_parts = parsed.path.strip("/").split("/")
     if len(path_parts) < 2:
         raise ValueError("Invalid GitHub URL")
     owner, repo = path_parts[0], path_parts[1].replace(".git", "")
 
-    # Temp clone directory
+    # Use temp directory to clone repo
     with tempfile.TemporaryDirectory() as tmpdir:
-        repo_path = os.path.join(tmpdir, repo)
-        clone_repo(repo_url, repo_path)
+        local_repo_path = os.path.join(tmpdir, repo)
+        clone_repo(repo_url, local_repo_path)
 
-        # Create timestamped branch
+        # Create timestamped branch locally
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         branch_name = f"ai-edits-{timestamp}"
-        create_timestamped_branch(repo_path, branch_name)
+        create_timestamped_branch(local_repo_path, branch_name)
 
-        # Run AI agent on repo
-        run_prompt_on_repo(repo_path, prompt)  # Implement this to apply AI changes
+        # Start sandbox
+        sandbox = Sandbox()
 
-        # Commit and push changes
-        commit_changes(repo_path, message=f"AI: {prompt}")
-        push_branch(repo_path, branch_name)
+        try:
+            # Copy repo into sandbox (optional: compress + extract for large repos)
+            sandbox.upload(local_repo_path, remote_path="/sandbox/repo")
+            sandbox.run_code("cd /sandbox/repo")
 
-        # Create PR
+            # Run AI agent to edit code in sandbox
+            run_prompt_on_repo(sandbox, "/sandbox/repo", prompt)
+
+            # Download changes back to local repo path
+            sandbox.download(remote_path="/sandbox/repo", local_path=local_repo_path)
+
+        finally:
+            sandbox.kill()
+
+        # Commit, push, and create PR
+        commit_changes(local_repo_path, message=f"AI: {prompt}")
+        push_branch(local_repo_path, branch_name)
+
         pr_url = create_pull_request(
             owner=owner,
             repo=repo,
