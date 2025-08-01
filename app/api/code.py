@@ -6,9 +6,11 @@ from app.services.git_service import clone_repo_sse
 router = APIRouter()
 
 @router.post("/code")
-async def process_code(request_data: CodeRequest):
+def process_code(request_data: CodeRequest):
     repo_url = request_data.repoUrl
-    return StreamingResponse(
-        clone_repo_sse(repo_url),
-        media_type="text/event-stream"
-    )
+
+    def event_generator():
+        for message in clone_repo_sse(repo_url):
+            yield message
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
