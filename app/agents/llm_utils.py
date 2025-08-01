@@ -17,7 +17,7 @@ except ValueError as e:
 
 # --- Model Definition ---
 # Initialize the generative model to be used.
-model = genai.GenerativeModel("gemini-pro")
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 def summarize_code(code: str) -> str:
     """
